@@ -1,6 +1,8 @@
 package com.kreitek.editor;
 
+import com.kreitek.editor.Memento.Caretaker;
 import com.kreitek.editor.commands.CommandFactory;
+import com.kreitek.editor.commands.UndoCommand;
 
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -17,7 +19,9 @@ public class ConsoleEditor implements Editor {
     public static final String TEXT_WHITE = "\u001B[37m";
 
     private final CommandFactory commandFactory = new CommandFactory();
-    private ArrayList<String> documentLines = new ArrayList<String>();
+    private ArrayList<String> documentLines = new ArrayList<>();
+    private final UndoCommand undoCommand = new UndoCommand();
+    private final Caretaker commandCaretaker = Caretaker.getInstance();
 
     @Override
     public void run() {
@@ -26,6 +30,9 @@ public class ConsoleEditor implements Editor {
             String commandLine = waitForNewCommand();
             try {
                 Command command = commandFactory.getCommand(commandLine);
+                if (!command.getClass().getSimpleName().equals("UndoCommand")) {
+                    commandCaretaker.add(undoCommand.setState(documentLines));
+                }
                 command.execute(documentLines);
             } catch (BadCommandException e) {
                 printErrorToConsole("Bad command");
@@ -64,6 +71,7 @@ public class ConsoleEditor implements Editor {
         printLnToConsole("To add new line -> a \"your text\"");
         printLnToConsole("To update line  -> u [line number] \"your text\"");
         printLnToConsole("To delete line  -> d [line number]");
+        printLnToConsole("To undo last command -> undo");
     }
 
     private void printErrorToConsole(String message) {
